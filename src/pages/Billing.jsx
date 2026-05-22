@@ -40,7 +40,13 @@ export default function Billing() {
     if (existing) {
       setItems(items.map(i => i.productId === selProd ? { ...i, qty: i.qty + Number(qty) } : i));
     } else {
-      setItems([...items, { productId: prod._id, name: prod.name, price: prod.price, qty: Number(qty) }]);
+      setItems([...items, {
+        productId:    prod._id,
+        name:         prod.name,
+        actualPrice:  prod.actualPrice,
+        price:        prod.sellingPrice,
+        qty:          Number(qty)
+      }]);
     }
     setSelProd(''); setQty(1); setMsg('');
   };
@@ -93,7 +99,11 @@ export default function Billing() {
             <label style={{ fontSize:'12px', color:'#6b6960', display:'block', marginBottom:'4px' }}>Product</label>
             <select style={{ ...inp, width:'100%' }} value={selProd} onChange={e=>setSelProd(e.target.value)}>
               <option value="">-- Select Product --</option>
-              {products.filter(p=>p.stock>0).map(p=><option key={p._id} value={p._id}>{p.name} — ₹{p.price} ({p.stock} left)</option>)}
+              {products.filter(p=>p.stock>0).map(p=>(
+                <option key={p._id} value={p._id}>
+                  {p.name} — Selling: ₹{p.sellingPrice} | Purchase: ₹{p.actualPrice} [Stock: {p.stock}]
+                </option>
+              ))}
             </select>
           </div>
           <div style={{ flex:1 }}>
@@ -107,25 +117,34 @@ export default function Billing() {
         {items.length > 0 && (
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px', marginBottom:'12px' }}>
             <thead>
-              <tr>{['Product','Price','Qty','Subtotal',''].map(h=><th key={h} style={{ textAlign:'left', padding:'6px 8px', color:'#6b6960', borderBottom:'1px solid #e2e0d8', fontSize:'12px' }}>{h}</th>)}</tr>
+              <tr>{['Product','Purchase Price','Selling Price','Qty','Subtotal','Profit',''].map(h=>(
+                <th key={h} style={{ textAlign:'left', padding:'6px 8px', color:'#6b6960', borderBottom:'1px solid #e2e0d8', fontSize:'12px' }}>{h}</th>
+              ))}</tr>
             </thead>
             <tbody>
-              {items.map(item=>(
-                <tr key={item.productId} style={{ borderBottom:'1px solid #f5f4f0' }}>
-                  <td style={{ padding:'8px' }}>{item.name}</td>
-                  <td style={{ padding:'8px' }}>₹{item.price}</td>
-                  <td style={{ padding:'8px' }}>{item.qty}</td>
-                  <td style={{ padding:'8px', fontWeight:'500' }}>₹{(item.price*item.qty).toLocaleString('en-IN')}</td>
-                  <td style={{ padding:'8px' }}><button style={btn('danger')} onClick={()=>removeItem(item.productId)}>✕</button></td>
-                </tr>
-              ))}
+              {items.map(item=>{
+                const profit = (item.price - item.actualPrice) * item.qty;
+                return (
+                  <tr key={item.productId} style={{ borderBottom:'1px solid #f5f4f0' }}>
+                    <td style={{ padding:'8px' }}>{item.name}</td>
+                    <td style={{ padding:'8px', color:'#6b6960' }}>₹{item.actualPrice}</td>
+                    <td style={{ padding:'8px' }}>₹{item.price}</td>
+                    <td style={{ padding:'8px' }}>{item.qty}</td>
+                    <td style={{ padding:'8px', fontWeight:'500' }}>₹{(item.price*item.qty).toLocaleString('en-IN')}</td>
+                    <td style={{ padding:'8px', fontWeight:'500', color: profit>=0?'#2d7a4f':'#c0392b' }}>
+                      ₹{profit.toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding:'8px' }}><button style={btn('danger')} onClick={()=>removeItem(item.productId)}>✕</button></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
 
         <div style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap:'16px', borderTop:'1px solid #e2e0d8', paddingTop:'12px' }}>
           <span style={{ color:'#6b6960' }}>Total:</span>
-          <span style={{ fontSize:'20px', fontWeight:'600' }}>₹{total.toLocaleString('en-IN')}</span>
+          <strong style={{ fontSize:'20px' }}>₹{total.toLocaleString('en-IN')}</strong>
         </div>
 
         {msg && <p style={{ marginTop:'10px', fontSize:'13px', color: msg.includes('!')? '#2d7a4f':'#c0392b' }}>{msg}</p>}
