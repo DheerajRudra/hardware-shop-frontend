@@ -19,17 +19,17 @@ const CATS = ['Tools','Fasteners','Electrical','Plumbing','Paint','Safety','Othe
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [search,   setSearch]   = useState('');
-  const [form,     setForm]     = useState({ name:'', category:'Tools', price:'', stock:'', alert:'5' });
+  const [form,     setForm]     = useState({ name:'', category:'Tools', actualPrice:'', sellingPrice:'', stock:'', alert:'5' });
   const [msg,      setMsg]      = useState('');
 
   const load = () => getProducts().then(r => setProducts(r.data));
   useEffect(() => { load(); }, []);
 
   const handleAdd = async () => {
-    if (!form.name || !form.price || !form.stock) { setMsg('Fill all required fields'); return; }
+    if (!form.name || !form.actualPrice || !form.sellingPrice || !form.stock) { setMsg('Fill all required fields'); return; }
     try {
-      await addProduct({ ...form, price: +form.price, stock: +form.stock, alert: +form.alert });
-      setForm({ name:'', category:'Tools', price:'', stock:'', alert:'5' });
+      await addProduct({ ...form, actualPrice: +form.actualPrice, sellingPrice: +form.sellingPrice, stock: +form.stock, alert: +form.alert });
+      setForm({ name:'', category:'Tools', actualPrice:'', sellingPrice:'', stock:'', alert:'5' });
       setMsg('Product added!'); load();
       setTimeout(() => setMsg(''), 2000);
     } catch { setMsg('Error adding product'); }
@@ -52,7 +52,7 @@ export default function Products() {
       {/* Add Form */}
       <div style={{ background:'#fff', border:'1px solid #e2e0d8', borderRadius:'12px', padding:'20px', marginBottom:'20px' }}>
         <h2 style={{ fontSize:'15px', fontWeight:'600', marginBottom:'16px' }}>Add Product</h2>
-        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr auto', gap:'10px', alignItems:'flex-end' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 1fr auto', gap:'10px', alignItems:'flex-end' }}>
           <div>
             <label style={{ fontSize:'12px', color:'#6b6960', display:'block', marginBottom:'4px' }}>Product Name *</label>
             <input style={inp} placeholder="e.g. Hammer" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
@@ -64,8 +64,12 @@ export default function Products() {
             </select>
           </div>
           <div>
-            <label style={{ fontSize:'12px', color:'#6b6960', display:'block', marginBottom:'4px' }}>Price (₹) *</label>
-            <input style={inp} type="number" placeholder="0" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} />
+            <label style={{ fontSize:'12px', color:'#6b6960', display:'block', marginBottom:'4px' }}>Purchase Price (₹) *</label>
+            <input style={inp} type="number" placeholder="0" value={form.actualPrice} onChange={e=>setForm({...form,actualPrice:e.target.value})} />
+          </div>
+          <div>
+            <label style={{ fontSize:'12px', color:'#6b6960', display:'block', marginBottom:'4px' }}>Selling Price (₹) *</label>
+            <input style={inp} type="number" placeholder="0" value={form.sellingPrice} onChange={e=>setForm({...form,sellingPrice:e.target.value})} />
           </div>
           <div>
             <label style={{ fontSize:'12px', color:'#6b6960', display:'block', marginBottom:'4px' }}>Stock *</label>
@@ -91,10 +95,11 @@ export default function Products() {
           ? <p style={{ color:'#6b6960', textAlign:'center', padding:'2rem' }}>No products found</p>
           : <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px' }}>
               <thead>
-                <tr>{['Name','Category','Price','Stock','Status',''].map(h=><th key={h} style={{ textAlign:'left', padding:'8px 10px', color:'#6b6960', borderBottom:'1px solid #e2e0d8', fontSize:'12px' }}>{h}</th>)}</tr>
+                <tr>{['Name','Category','Purchase Price','Selling Price','Profit','Stock','Status',''].map(h=><th key={h} style={{ textAlign:'left', padding:'8px 10px', color:'#6b6960', borderBottom:'1px solid #e2e0d8', fontSize:'12px' }}>{h}</th>)}</tr>
               </thead>
               <tbody>
                 {filtered.map(p => {
+                  const profit = (p.sellingPrice||0) - (p.actualPrice||0);
                   const status = p.stock === 0
                     ? { label:'Out of stock', bg:'#fdf0ee', color:'#c0392b' }
                     : p.stock <= p.alert
@@ -104,7 +109,11 @@ export default function Products() {
                     <tr key={p._id} style={{ borderBottom:'1px solid #f5f4f0' }}>
                       <td style={{ padding:'10px' }}><strong>{p.name}</strong></td>
                       <td style={{ padding:'10px', color:'#6b6960' }}>{p.category}</td>
-                      <td style={{ padding:'10px' }}>₹{p.price.toLocaleString('en-IN')}</td>
+                      <td style={{ padding:'10px' }}>₹{(p.actualPrice||0).toLocaleString('en-IN')}</td>
+                      <td style={{ padding:'10px' }}>₹{(p.sellingPrice||0).toLocaleString('en-IN')}</td>
+                      <td style={{ padding:'10px', fontWeight:'500', color: profit >= 0 ? '#2d7a4f' : '#c0392b' }}>
+                        ₹{profit.toLocaleString('en-IN')}
+                      </td>
                       <td style={{ padding:'10px' }}>{p.stock}</td>
                       <td style={{ padding:'10px' }}>
                         <span style={{ background:status.bg, color:status.color, padding:'3px 10px', borderRadius:'20px', fontSize:'11px', fontWeight:'500' }}>
