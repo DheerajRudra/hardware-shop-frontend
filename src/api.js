@@ -2,23 +2,25 @@ import axios from 'axios';
 
 const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 
-export const getProducts      = ()         => API.get('/products');
-export const addProduct       = (data)     => API.post('/products', data);
-export const updateProduct    = (id, data) => API.put(`/products/${id}`, data);
-export const deleteProduct    = (id)       => API.delete(`/products/${id}`);
-export const getDeletedProducts = ()       => API.get('/products/deleted');
-export const restoreProduct   = (id)       => API.put(`/products/${id}/restore`);
+export const getProducts        = ()         => API.get('/products');
+export const addProduct         = (data)     => API.post('/products', data);
+export const updateProduct      = (id, data) => API.put(`/products/${id}`, data);
+export const deleteProduct      = (id)       => API.delete(`/products/${id}`);
+export const getDeletedProducts = ()         => API.get('/products/deleted');
+export const restoreProduct     = (id)       => API.put(`/products/${id}/restore`);
 
-export const getCustomers     = ()         => API.get('/customers');
-export const addCustomer      = (data)     => API.post('/customers', data);
-export const deleteCustomer   = (id)       => API.delete(`/customers/${id}`);
-export const addPurchase      = (id, data) => API.post(`/customers/${id}/purchases`, data);
-export const deletePurchase   = (id, pid)  => API.delete(`/customers/${id}/purchases/${pid}`);
+export const getCustomers       = ()         => API.get('/customers');
+export const addCustomer        = (data)     => API.post('/customers', data);
+export const deleteCustomer     = (id)       => API.delete(`/customers/${id}`);
+export const addPurchase        = (id, data) => API.post(`/customers/${id}/purchases`, data);
+export const softDeletePurchase = (id, pid)  => API.put(`/customers/${id}/purchases/${pid}/delete`);
+export const restorePurchase    = (id, pid)  => API.put(`/customers/${id}/purchases/${pid}/restore`);
+export const deletePurchase     = (id, pid)  => API.delete(`/customers/${id}/purchases/${pid}`);
 
-export const getVendors       = ()         => API.get('/vendors');
-export const addVendor        = (data)     => API.post('/vendors', data);
-export const deleteVendor     = (id)       => API.delete(`/vendors/${id}`);
+export const getVendors         = ()         => API.get('/vendors');
+export const addVendor          = (data)     => API.post('/vendors', data);
+export const deleteVendor       = (id)       => API.delete(`/vendors/${id}`);
 
-export const getBills         = ()         => API.get('/bills');
-export const addBill          = (data)     => API.post('/bills', data);
-export const deleteBill       = (id)       => API.delete(`/bills/${id}`);
+export const getBills           = ()         => API.get('/bills');
+export const addBill            = (data)     => API.post('/bills', data);
+export const deleteBill         = (id)       => API.delete(`/bills/${id}`);
