@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getCustomers, addCustomer, deleteCustomer, addPurchase, deletePurchase } from '../api';
+import { getCustomers, addCustomer, deleteCustomer, addPurchase, softDeletePurchase, restorePurchase } from '../api';
 
 const inp = {
   padding: '8px 12px',
@@ -30,6 +30,7 @@ export default function Customers() {
   const [expanded, setExpanded] = useState(null);
   const [purchaseForm, setPurchaseForm] = useState({ itemName: '', price: '', qty: '1' });
   const [purchaseMsg, setPurchaseMsg] = useState('');
+  const [showDeleted, setShowDeleted] = useState({});
 
   const load = () => getCustomers().then(r => setCustomers(r.data));
   useEffect(() => { load(); }, []);
@@ -73,9 +74,14 @@ export default function Customers() {
     }
   };
 
-  const handleDeletePurchase = async (customerId, purchaseId) => {
-    if (!confirm('Remove this purchase?')) return;
-    await deletePurchase(customerId, purchaseId);
+  const handleRemovePurchase = async (customerId, purchaseId) => {
+    if (!confirm('Remove this purchase? You can restore it later.')) return;
+    await softDeletePurchase(customerId, purchaseId);
+    load();
+  };
+
+  const handleRestorePurchase = async (customerId, purchaseId) => {
+    await restorePurchase(customerId, purchaseId);
     load();
   };
 
@@ -87,7 +93,7 @@ export default function Customers() {
   const initials = name => name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
   const totalSpent = (purchases = []) =>
-    purchases.reduce((sum, p) => sum + (p.price * p.qty), 0);
+    purchases.filter(p => !p.deleted).reduce((sum, p) => sum + (p.price * p.qty), 0);
 
   return (
     <div>
@@ -134,16 +140,16 @@ export default function Customers() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '500', fontSize: '14px' }}>{c.name}</div>
-                    <div style={{ fontSize: '12px', color: '#6b6960' }}>{c.phone}{c.email ? ` · ${c.email}` : ''}</div>
+                    <div style={{ fontSize: '12px', color: '#6b6960' }}>{c.phone}{c.email ? ' - ' + c.email : ''}</div>
                     {c.addr && <div style={{ fontSize: '12px', color: '#6b6960' }}>{c.addr}</div>}
                   </div>
-                  {c.purchases && c.purchases.length > 0 && (
+                  {c.purchases && c.purchases.filter(p => !p.deleted).length > 0 && (
                     <div style={{ textAlign: 'center', marginRight: '8px' }}>
                       <div style={{ fontSize: '11px', color: '#6b6960' }}>Total Spent</div>
                       <div style={{ fontSize: '14px', fontWeight: '600', color: '#2d7a4f' }}>
-                        {String.fromCharCode(8377)}{totalSpent(c.purchases).toLocaleString('en-IN')}
+                        Rs.{totalSpent(c.purchases).toLocaleString('en-IN')}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#6b6960' }}>{c.purchases.length} item(s)</div>
+                      <div style={{ fontSize: '11px', color: '#6b6960' }}>{c.purchases.filter(p => !p.deleted).length} item(s)</div>
                     </div>
                   )}
                   <button style={btn('green')} onClick={() => setExpanded(expanded === c._id ? null : c._id)}>
@@ -176,7 +182,12 @@ export default function Customers() {
 
                     {c.purchases && c.purchases.length > 0 ? (
                       <div>
-                        <h3 style={{ fontSize: '13px', fontWeight: '600', marginBottom: '8px', color: '#1a1917' }}>Purchase History</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#1a1917' }}>Purchase History</h3>
+                          <button style={{ ...btn('default'), padding: '4px 10px', fontSize: '11px' }} onClick={() => setShowDeleted({ ...showDeleted, [c._id]: !showDeleted[c._id] })}>
+                            {showDeleted[c._id] ? 'Hide Removed' : 'Show Removed'}
+                          </button>
+                        </div>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                           <thead>
                             <tr style={{ background: '#f0ede8' }}>
@@ -190,16 +201,19 @@ export default function Customers() {
                             </tr>
                           </thead>
                           <tbody>
-                            {c.purchases.map((p, i) => (
-                              <tr key={p._id} style={{ borderBottom: '1px solid #e2e0d8' }}>
+                            {c.purchases.filter(p => showDeleted[c._id] ? true : !p.deleted).map((p, i) => (
+                              <tr key={p._id} style={{ borderBottom: '1px solid #e2e0d8', opacity: p.deleted ? 0.5 : 1, background: p.deleted ? '#fff5f5' : 'transparent' }}>
                                 <td style={{ padding: '8px 10px', color: '#6b6960' }}>{i + 1}</td>
-                                <td style={{ padding: '8px 10px', fontWeight: '500' }}>{p.itemName}</td>
-                                <td style={{ padding: '8px 10px', textAlign: 'right' }}>{String.fromCharCode(8377)}{p.price.toLocaleString('en-IN')}</td>
+                                <td style={{ padding: '8px 10px', fontWeight: '500', textDecoration: p.deleted ? 'line-through' : 'none' }}>{p.itemName}</td>
+                                <td style={{ padding: '8px 10px', textAlign: 'right' }}>Rs.{p.price.toLocaleString('en-IN')}</td>
                                 <td style={{ padding: '8px 10px', textAlign: 'right' }}>{p.qty}</td>
-                                <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: '600', color: '#2d7a4f' }}>{String.fromCharCode(8377)}{(p.price * p.qty).toLocaleString('en-IN')}</td>
+                                <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: '600', color: '#2d7a4f' }}>Rs.{(p.price * p.qty).toLocaleString('en-IN')}</td>
                                 <td style={{ padding: '8px 10px', textAlign: 'center', color: '#6b6960' }}>{new Date(p.date).toLocaleDateString('en-IN')}</td>
                                 <td style={{ padding: '8px 10px', textAlign: 'center' }}>
-                                  <button style={{ ...btn('danger'), padding: '4px 10px', fontSize: '12px' }} onClick={() => handleDeletePurchase(c._id, p._id)}>Remove</button>
+                                  {p.deleted
+                                    ? <button style={{ ...btn('green'), padding: '4px 10px', fontSize: '12px' }} onClick={() => handleRestorePurchase(c._id, p._id)}>Restore</button>
+                                    : <button style={{ ...btn('danger'), padding: '4px 10px', fontSize: '12px' }} onClick={() => handleRemovePurchase(c._id, p._id)}>Remove</button>
+                                  }
                                 </td>
                               </tr>
                             ))}
@@ -207,7 +221,7 @@ export default function Customers() {
                           <tfoot>
                             <tr style={{ background: '#fdf0ed' }}>
                               <td colSpan="4" style={{ padding: '8px 10px', fontWeight: '600', fontSize: '13px' }}>Grand Total</td>
-                              <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: '700', color: '#c84b31', fontSize: '14px' }}>{String.fromCharCode(8377)}{totalSpent(c.purchases).toLocaleString('en-IN')}</td>
+                              <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: '700', color: '#c84b31', fontSize: '14px' }}>Rs.{totalSpent(c.purchases).toLocaleString('en-IN')}</td>
                               <td colSpan="2"></td>
                             </tr>
                           </tfoot>
