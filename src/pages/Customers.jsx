@@ -128,7 +128,6 @@ export default function Customers() {
           : <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {filtered.map(c => (
               <div key={c._id} style={{ border: '1px solid #e2e0d8', borderRadius: '10px', overflow: 'hidden' }}>
-
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px' }}>
                   <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#fdf0ed', color: '#c84b31', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '14px', flexShrink: 0 }}>
                     {initials(c.name)}
@@ -219,7 +218,6 @@ export default function Customers() {
                     )}
                   </div>
                 )}
-
               </div>
             ))}
           </div>
